@@ -21,6 +21,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+NAME_COLUMN = 0
+PHONE_COLUMN = 1
+TRANSFER_NUMBER_COLUMN = 2
+TRANSFER_TYPE_COLUMN = 3
+BALANCE_COLUMN = 4
+INITIAL_SUPPLIER_BALANCE = "0.00"
+
 
 class SuppliersPage(QWidget):
     def __init__(self):
@@ -41,6 +48,7 @@ class SuppliersPage(QWidget):
 
         self.page_title = QLabel("إدارة الموردين")
         self.page_title.setObjectName("pageTitle")
+        self.page_title.setToolTip("صفحة إدارة الموردين")
 
         self.page_caption = QLabel("إضافة وتعديل وحذف الموردين من شاشة واحدة")
         self.page_caption.setObjectName("pageCaption")
@@ -208,10 +216,11 @@ class SuppliersPage(QWidget):
         }
 
     def supplier_exists(self, name, exclude_row=None):
+        normalized_name = name.casefold()
         for row in range(self.suppliers_table.rowCount()):
             if exclude_row is not None and row == exclude_row:
                 continue
-            if self.suppliers_table.item(row, 0).text() == name:
+            if self.suppliers_table.item(row, NAME_COLUMN).text().casefold() == normalized_name:
                 return True
         return False
 
@@ -240,7 +249,7 @@ class SuppliersPage(QWidget):
 
         row = self.suppliers_table.rowCount()
         self.suppliers_table.insertRow(row)
-        self.set_row_values(row, supplier_data, "0.00")
+        self.set_row_values(row, supplier_data, INITIAL_SUPPLIER_BALANCE)
         self.update_summary()
         self.clear_form(show_status=False)
         self.status_label.setText(f"تمت إضافة المورد {supplier_data['name']} بنجاح")
@@ -259,7 +268,7 @@ class SuppliersPage(QWidget):
             self.show_message("تنبيه", "اسم المورد مسجل لمورد آخر", QMessageBox.Warning)
             return
 
-        balance = self.suppliers_table.item(self.selected_row, 4).text()
+        balance = self.suppliers_table.item(self.selected_row, BALANCE_COLUMN).text()
         self.set_row_values(self.selected_row, supplier_data, balance)
         self.status_label.setText(f"تم تحديث بيانات المورد {supplier_data['name']}")
         self.show_message("نجاح", "تم تعديل بيانات المورد بنجاح", QMessageBox.Information)
@@ -269,7 +278,7 @@ class SuppliersPage(QWidget):
             self.show_message("تنبيه", "يرجى اختيار مورد من الجدول أولاً", QMessageBox.Warning)
             return
 
-        supplier_name = self.suppliers_table.item(self.selected_row, 0).text()
+        supplier_name = self.suppliers_table.item(self.selected_row, NAME_COLUMN).text()
         confirmation = QMessageBox.question(
             self,
             "تأكيد الحذف",
@@ -293,10 +302,14 @@ class SuppliersPage(QWidget):
             return
 
         self.selected_row = selected_items[0].row()
-        self.name_input.setText(self.suppliers_table.item(self.selected_row, 0).text())
-        self.phone_input.setText(self.suppliers_table.item(self.selected_row, 1).text())
-        self.transfer_number_input.setText(self.suppliers_table.item(self.selected_row, 2).text())
-        self.transfer_type_input.setCurrentText(self.suppliers_table.item(self.selected_row, 3).text())
+        self.name_input.setText(self.suppliers_table.item(self.selected_row, NAME_COLUMN).text())
+        self.phone_input.setText(self.suppliers_table.item(self.selected_row, PHONE_COLUMN).text())
+        self.transfer_number_input.setText(
+            self.suppliers_table.item(self.selected_row, TRANSFER_NUMBER_COLUMN).text()
+        )
+        self.transfer_type_input.setCurrentText(
+            self.suppliers_table.item(self.selected_row, TRANSFER_TYPE_COLUMN).text()
+        )
         self.update_button.setEnabled(True)
         self.delete_button.setEnabled(True)
         self.status_label.setText("يمكنك الآن تعديل المورد المحدد أو حذفه")
