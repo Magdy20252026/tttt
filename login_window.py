@@ -26,7 +26,7 @@ PHONE_COLUMN = 1
 TRANSFER_NUMBER_COLUMN = 2
 TRANSFER_TYPE_COLUMN = 3
 BALANCE_COLUMN = 4
-INITIAL_SUPPLIER_BALANCE = "0.00"
+INITIAL_SUPPLIER_BALANCE = 0
 
 
 class SuppliersPage(QWidget):
@@ -189,7 +189,7 @@ class SuppliersPage(QWidget):
         message_box.exec()
 
     def validate_inputs(self):
-        name = self.name_input.text().strip()
+        name = self.normalize_name(self.name_input.text())
         phone = self.phone_input.text().strip()
         transfer_number = self.transfer_number_input.text().strip()
 
@@ -215,12 +215,21 @@ class SuppliersPage(QWidget):
             "transfer_type": self.transfer_type_input.currentText(),
         }
 
+    def normalize_name(self, name):
+        return " ".join(name.split())
+
+    def format_balance(self, balance):
+        return f"{balance:.2f}"
+
     def supplier_exists(self, name, exclude_row=None):
-        normalized_name = name.casefold()
+        normalized_name = self.normalize_name(name).casefold()
         for row in range(self.suppliers_table.rowCount()):
             if exclude_row is not None and row == exclude_row:
                 continue
-            if self.suppliers_table.item(row, NAME_COLUMN).text().casefold() == normalized_name:
+            if (
+                self.normalize_name(self.suppliers_table.item(row, NAME_COLUMN).text()).casefold()
+                == normalized_name
+            ):
                 return True
         return False
 
@@ -249,7 +258,7 @@ class SuppliersPage(QWidget):
 
         row = self.suppliers_table.rowCount()
         self.suppliers_table.insertRow(row)
-        self.set_row_values(row, supplier_data, INITIAL_SUPPLIER_BALANCE)
+        self.set_row_values(row, supplier_data, self.format_balance(INITIAL_SUPPLIER_BALANCE))
         self.update_summary()
         self.clear_form(show_status=False)
         self.status_label.setText(f"تمت إضافة المورد {supplier_data['name']} بنجاح")
@@ -268,7 +277,12 @@ class SuppliersPage(QWidget):
             self.show_message("تنبيه", "اسم المورد مسجل لمورد آخر", QMessageBox.Warning)
             return
 
-        balance = self.suppliers_table.item(self.selected_row, BALANCE_COLUMN).text()
+        balance_item = self.suppliers_table.item(self.selected_row, BALANCE_COLUMN)
+        balance = (
+            balance_item.text()
+            if balance_item is not None
+            else self.format_balance(INITIAL_SUPPLIER_BALANCE)
+        )
         self.set_row_values(self.selected_row, supplier_data, balance)
         self.status_label.setText(f"تم تحديث بيانات المورد {supplier_data['name']}")
         self.show_message("نجاح", "تم تعديل بيانات المورد بنجاح", QMessageBox.Information)
